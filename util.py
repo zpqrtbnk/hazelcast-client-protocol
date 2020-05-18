@@ -324,6 +324,7 @@ class SupportedLanguages(Enum):
     JAVA = 'java'
     # CPP = 'cpp'
     CS = 'cs'
+    SCS = 'scs' # server-side CS
     # PY = 'py'
     # TS = 'ts'
     # GO = 'go'
@@ -333,6 +334,7 @@ codec_output_directories = {
     SupportedLanguages.JAVA: 'hazelcast/src/main/java/com/hazelcast/client/impl/protocol/codec/',
     # SupportedLanguages.CPP: 'hazelcast/generated-sources/src/hazelcast/client/protocol/codec/',
     SupportedLanguages.CS: 'src/Hazelcast.Net/Protocol/Codec/',
+    SupportedLanguages.SCS: 'src/Hazelcast.Net.Testing/Protocol/Codec/',
     # SupportedLanguages.PY: 'hazelcast/protocol/codec/',
     # SupportedLanguages.TS: 'src/codec/',
     # SupportedLanguages.GO: 'internal/proto/'
@@ -342,6 +344,7 @@ custom_codec_output_directories = {
     SupportedLanguages.JAVA: 'hazelcast/src/main/java/com/hazelcast/client/impl/protocol/codec/custom/',
     # SupportedLanguages.CPP: 'hazelcast/generated-sources/src/hazelcast/client/protocol/codec/',
     SupportedLanguages.CS: 'src/Hazelcast.Net/Protocol/Codec/Custom/',
+    SupportedLanguages.SCS: 'src/Hazelcast.Net.Testing/Protocol/Codec/Custom/',
     # SupportedLanguages.PY: 'hazelcast/protocol/codec/',
     # SupportedLanguages.TS: 'src/codec/',
     # SupportedLanguages.GO: 'internal/proto/'
@@ -351,6 +354,7 @@ file_extensions = {
     SupportedLanguages.JAVA: 'java',
     # SupportedLanguages.CPP: 'cpp',  # TODO header files ?
     SupportedLanguages.CS: 'cs',
+    SupportedLanguages.SCS: 'cs',
     # SupportedLanguages.PY: 'py',
     # SupportedLanguages.TS: 'ts',
     # SupportedLanguages.GO: 'go'
@@ -360,22 +364,27 @@ language_specific_funcs = {
     'lang_types_encode': {
         SupportedLanguages.JAVA: java_types_encode,
         SupportedLanguages.CS: cs_types_encode,
+        SupportedLanguages.SCS: cs_types_encode,
     },
     'lang_types_decode': {
         SupportedLanguages.JAVA: java_types_decode,
         SupportedLanguages.CS: cs_types_decode,
+        SupportedLanguages.SCS: cs_types_decode,
     },
     'lang_name': {
         SupportedLanguages.JAVA: java_name,
         SupportedLanguages.CS: cs_name,
+        SupportedLanguages.SCS: cs_name,
     },
     'param_name': {
         SupportedLanguages.JAVA: param_name,
         SupportedLanguages.CS: param_name,
+        SupportedLanguages.SCS: param_name,
     },
     'escape_keyword': {
         SupportedLanguages.JAVA: lambda x: x,
         SupportedLanguages.CS: cs_escape_keyword,
+        SupportedLanguages.SCS: cs_escape_keyword,
     },
 }
 
@@ -383,6 +392,7 @@ language_service_ignore_list = {
     SupportedLanguages.JAVA: [],
     # SupportedLanguages.CPP: [],
     SupportedLanguages.CS: cs_ignore_service_list,
+    SupportedLanguages.SCS: cs_ignore_service_list,
     # SupportedLanguages.PY: [],
     # SupportedLanguages.TS: [],
     # SupportedLanguages.GO: []
