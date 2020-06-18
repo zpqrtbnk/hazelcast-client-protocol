@@ -55,7 +55,7 @@ _cs_types_common = {
     "Address": "Hazelcast.Networking.NetworkAddress",
     "ErrorHolder": "Hazelcast.Protocol.Data.ErrorHolder",
     "StackTraceElement": "Hazelcast.Exceptions.StackTraceElement",
-    "SimpleEntryView": "Hazelcast.Data.Map.MapEntry<IData, IData>",
+    "SimpleEntryView": "Hazelcast.Data.MapEntry<IData, IData>",
     "RaftGroupId": "NA",
     "WanReplicationRef": "NA",
     "HotRestartConfig": "NA",
@@ -76,8 +76,8 @@ _cs_types_common = {
     "CacheEventData": "NA",
     "QueryCacheConfigHolder": "NA",
     "DistributedObjectInfo": "Hazelcast.Data.DistributedObjectInfo",
-    "IndexConfig": "Hazelcast.Data.Map.IndexConfig",
-    "BitmapIndexOptions": "Hazelcast.Data.Map.BitmapIndexOptions",
+    "IndexConfig": "Hazelcast.Data.IndexConfig",
+    "BitmapIndexOptions": "Hazelcast.Data.BitmapIndexOptions",
     "AttributeConfig": "NA",
     "ListenerConfigHolder": "NA",
     "CacheSimpleEntryListenerConfig": "NA",
@@ -111,7 +111,7 @@ _cs_types_encode = {
     "List_QueryCacheConfigHolder": "NA",
     "List_DistributedObjectInfo": "ICollection<Hazelcast.Data.DistributedObjectInfo>",
     "List_QueryCacheEventData": "NA",
-    "List_IndexConfig": "ICollection<Hazelcast.Data.Map.IndexConfig>",
+    "List_IndexConfig": "ICollection<Hazelcast.Data.IndexConfig>",
     "List_AttributeConfig": "NA",
     "List_ListenerConfigHolder": "NA",
     "List_CacheSimpleEntryListenerConfig": "NA",
@@ -130,7 +130,7 @@ _cs_types_encode = {
     "EntryList_UUID_List_Integer": "ICollection<KeyValuePair<Guid, IList<int>>>",
     "EntryList_Data_Data": "ICollection<KeyValuePair<IData, IData>>",
     
-    "BitmapIndexOptions": "Hazelcast.Data.Map.BitmapIndexOptions",
+    "BitmapIndexOptions": "Hazelcast.Data.BitmapIndexOptions",
 }
 
 _cs_types_decode = {
@@ -157,7 +157,7 @@ _cs_types_decode = {
     "List_QueryCacheConfigHolder": "NA",
     "List_DistributedObjectInfo": "ICollection<Hazelcast.Data.DistributedObjectInfo>",
     "List_QueryCacheEventData": "NA",
-    "List_IndexConfig": "IList<Hazelcast.Data.Map.IndexConfig>",
+    "List_IndexConfig": "IList<Hazelcast.Data.IndexConfig>",
     "List_AttributeConfig": "NA",
     "List_ListenerConfigHolder": "NA",
     "List_CacheSimpleEntryListenerConfig": "NA",
@@ -177,5 +177,5 @@ _cs_types_decode = {
     "EntryList_UUID_List_Integer": "IList<KeyValuePair<Guid, IList<int>>>",
     "EntryList_Data_Data": "IList<KeyValuePair<IData, IData>>",
     
-    "BitmapIndexOptions": "Hazelcast.Data.Map.BitmapIndexOptions",
+    "BitmapIndexOptions": "Hazelcast.Data.BitmapIndexOptions",
 }
