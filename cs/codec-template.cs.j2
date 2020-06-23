@@ -115,14 +115,16 @@ namespace Hazelcast.Protocol.Codecs
     {#RequestENCODE#}
         public static ClientMessage EncodeRequest({% for param in method.request.params %}{{ lang_types_encode(param.type) }} {{escape_keyword(param.name)}}{% if not loop.last %}, {% endif %}{% endfor %})
         {
-            var clientMessage = new ClientMessage();
-            clientMessage.IsRetryable = {{ method.request.retryable|lower }};
-            clientMessage.OperationName = "{{ service_name|capital }}.{{ method.name|capital }}";
+            var clientMessage = new ClientMessage
+            {
+                IsRetryable = {{ method.request.retryable|lower }},
+                OperationName = "{{ service_name|capital }}.{{ method.name|capital }}"
+            };
             var initialFrame = new Frame(new byte[RequestInitialFrameSize], (FrameFlags) ClientMessageFlags.Unfragmented);
-            initialFrame.Bytes.WriteInt(Messaging.FrameFields.Offset.MessageType, RequestMessageType);
-            initialFrame.Bytes.WriteInt(Messaging.FrameFields.Offset.PartitionId, -1);
+            initialFrame.Bytes.WriteIntL(Messaging.FrameFields.Offset.MessageType, RequestMessageType);
+            initialFrame.Bytes.WriteIntL(Messaging.FrameFields.Offset.PartitionId, -1);
         {% for param in fixed_params(method.request.params) %}
-            initialFrame.Bytes.Write{{ lang_types_decode(param.type)|capital }}(Request{{param.name|capital}}FieldOffset, {{escape_keyword(param.name)}});
+            initialFrame.Bytes.Write{{ lang_types_decode(param.type)|capital }}L(Request{{param.name|capital}}FieldOffset, {{escape_keyword(param.name)}});
         {% endfor %}
             clientMessage.Append(initialFrame);
         {% for param in var_size_params(method.request.params) %}
@@ -155,11 +157,10 @@ namespace Hazelcast.Protocol.Codecs
             {% if  fixed_params(method.response.params)|length != 0 %}
             var initialFrame = iterator.Take();
             {% else %}
-            //empty initial frame
-            iterator.Take();
+            iterator.Take(); // empty initial frame
             {% endif %}
         {% for param in fixed_params(method.response.params) %}
-            response.{{ param.name|capital }} = initialFrame.Bytes.Read{{ lang_types_decode(param.type)|capital }}(Response{{param.name|capital}}FieldOffset);
+            response.{{ param.name|capital }} = initialFrame.Bytes.Read{{ lang_types_decode(param.type)|capital }}L(Response{{param.name|capital}}FieldOffset);
         {% endfor %}
         {% for param in var_size_params(method.response.params) %}
             response.{{ param.name|capital }} = {{ decode_var_sized(param) }};
@@ -182,7 +183,7 @@ namespace Hazelcast.Protocol.Codecs
                 iterator.Take();
             {% endif %}
             {% for param in fixed_params(event.params) %}
-                var {{escape_keyword(param.name)}} =  initialFrame.Bytes.Read{{ lang_types_decode(param.type)|capital }}(Event{{(event.name|capital)}}{{param.name|capital}}FieldOffset);
+                var {{escape_keyword(param.name)}} =  initialFrame.Bytes.Read{{ lang_types_decode(param.type)|capital }}L(Event{{(event.name|capital)}}{{param.name|capital}}FieldOffset);
             {% endfor %}
             {% for param in var_size_params(event.params) %}
                 var {{escape_keyword(param.name)}} = {{ decode_var_sized(param) }};

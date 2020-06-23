@@ -87,7 +87,7 @@ namespace Hazelcast.Protocol.CustomCodecs
 
             var initialFrame = new Frame(new byte[InitialFrameSize]);
             {% endif %}
-            initialFrame.Bytes.Write{{ lang_types_decode(param.type)|capital }}({{ param.name|capital}}FieldOffset, {% if param.type == 'enum' %}(int) {% endif %}{{ param_name(codec.name)}}.{% if param.type == 'boolean' %}Is{% else %}{% endif %}{{ param.name|capital }});
+            initialFrame.Bytes.Write{{ lang_types_decode(param.type)|capital }}L({{ param.name|capital}}FieldOffset, {% if param.type == 'enum' %}(int) {% endif %}{{ param_name(codec.name)}}.{% if param.type == 'boolean' %}Is{% else %}{% endif %}{{ param.name|capital }});
             {% if loop.last %}
             clientMessage.Append(initialFrame);
             {% endif %}
@@ -111,7 +111,7 @@ namespace Hazelcast.Protocol.CustomCodecs
 
             var initialFrame = iterator.Take();
             {% endif %}
-            var {{ escape_keyword(param.name) }} = initialFrame.Bytes.Read{{ lang_types_decode(param.type)|capital }}({{  param.name|capital }}FieldOffset);
+            var {{ escape_keyword(param.name) }} = initialFrame.Bytes.Read{{ lang_types_decode(param.type)|capital }}L({{  param.name|capital }}FieldOffset);
             {% endfor %}
             {% for param in var_size_params(codec.params) %}
             {% if loop.first %}
