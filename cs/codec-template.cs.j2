@@ -52,6 +52,7 @@
 #pragma warning disable IDE0051 // Remove unused private members
 // ReSharper disable UnusedMember.Local
 // ReSharper disable RedundantUsingDirective
+// ReSharper disable CheckNamespace
 
 using System;
 using System.Threading;
@@ -107,11 +108,10 @@ namespace Hazelcast.Protocol.Codecs
         {% else %}
         private const int Event{{event.name|capital}}InitialFrameSize = Messaging.FrameFields.Offset.PartitionId + BytesExtensions.SizeOfInt;
         {% endfor %}
-        // hex: {{ '0x%06X'|format(event.id) }}
-        private const int Event{{event.name|capital}}MessageType = {{ event.id }};
+        private const int Event{{event.name|capital}}MessageType = {{ event.id }}; // {{ '0x%06X'|format(event.id) }}
     {% endfor %}
 
-    {#REQUEST PARAMETERS# is not required of client side}
+    {#REQUEST PARAMETERS# is not required for client side}
     {#RequestENCODE#}
         public static ClientMessage EncodeRequest({% for param in method.request.params %}{{ lang_types_encode(param.type) }} {{escape_keyword(param.name)}}{% if not loop.last %}, {% endif %}{% endfor %})
         {
@@ -133,11 +133,11 @@ namespace Hazelcast.Protocol.Codecs
             return clientMessage;
         }
 
-    {#RequestDECODE# is not required of client side}
+    {#RequestDECODE# is not required for client side}
     {#RESPONSE PARAMETERS#}
         public sealed class ResponseParameters
         {
-    {% for param in method.response.params %}
+        {% for param in method.response.params %}
 
             /// <summary>
             {% for line in param.doc.splitlines() %}
@@ -145,14 +145,14 @@ namespace Hazelcast.Protocol.Codecs
             {% endfor %}
             ///</summary>
             public {{ lang_types_decode(param.type) }} {{ param.name|capital }} { get; set; }
-    {% endfor %}
+        {% endfor %}
         }
 
-    {#RESPONSE ENCODE# is not required of client side}
+    {#RESPONSE ENCODE# is not required for client side}
     {#RESPONSE DECODE#}
         public static ResponseParameters DecodeResponse(ClientMessage clientMessage)
         {
-            var iterator = clientMessage.GetEnumerator();
+            using var iterator = clientMessage.GetEnumerator();
             var response = new ResponseParameters();
             {% if  fixed_params(method.response.params)|length != 0 %}
             var initialFrame = iterator.Take();
@@ -170,17 +170,16 @@ namespace Hazelcast.Protocol.Codecs
 
     {# EVENTS#}
     {% if method.events|length != 0 %}
-        public static ValueTask HandleEventAsync(ClientMessage clientMessage{% for event in method.events%}, Handle{{ event.name|capital }}EventAsync handle{{ event.name|capital }}EventAsync{% endfor %}, ILoggerFactory loggerFactory, CancellationToken cancellationToken)
+        public static ValueTask HandleEventAsync(ClientMessage clientMessage{% for event in method.events%}, Handle{{ event.name|capital }}EventAsync handle{{ event.name|capital }}EventAsync{% endfor %}, ILoggerFactory loggerFactory)
         {
+            using var iterator = clientMessage.GetEnumerator();
             var messageType = clientMessage.MessageType;
-            var iterator = clientMessage.GetEnumerator();
         {% for event in method.events%}
             if (messageType == Event{{(event.name|capital)}}MessageType) {
             {% if  fixed_params(event.params)|length != 0 %}
                 var initialFrame = iterator.Take();
-            {% else %}
-                //empty initial frame
-                iterator.Take();
+            {% else %}                
+                iterator.Take(); // empty initial frame
             {% endif %}
             {% for param in fixed_params(event.params) %}
                 var {{escape_keyword(param.name)}} =  initialFrame.Bytes.Read{{ lang_types_decode(param.type)|capital }}L(Event{{(event.name|capital)}}{{param.name|capital}}FieldOffset);
@@ -188,7 +187,7 @@ namespace Hazelcast.Protocol.Codecs
             {% for param in var_size_params(event.params) %}
                 var {{escape_keyword(param.name)}} = {{ decode_var_sized(param) }};
             {% endfor %}
-                return handle{{ event.name|capital }}EventAsync({% for param in event.params %}{{escape_keyword(param.name)}}, {% endfor %}cancellationToken);
+                return handle{{ event.name|capital }}EventAsync({% for param in event.params %}{% if not loop.first %}, {% endif %}{{escape_keyword(param.name)}}{% endfor %});
             }
         {% endfor %}
             loggerFactory.CreateLogger(typeof(EventHandler)).LogDebug("Unknown message type received on event handler :" + messageType);
@@ -196,10 +195,8 @@ namespace Hazelcast.Protocol.Codecs
         }
     {% for event in method.events%}
 
-        public delegate ValueTask Handle{{ event.name|capital }}EventAsync({% for param in event.params %}{{ lang_types_encode(param.type) }} {{escape_keyword(param.name)}}, {% endfor %}CancellationToken cancellationToken);
+        public delegate ValueTask Handle{{ event.name|capital }}EventAsync({% for param in event.params %}{% if not loop.first %}, {% endif %}{{ lang_types_encode(param.type) }} {{escape_keyword(param.name)}}{% endfor %});
     {% endfor %}
     {% endif %}
     }
 }
-
-#pragma warning restore IDE0051 // Remove unused private members

@@ -55,6 +55,8 @@
 // ReSharper disable CheckNamespace
 
 using System;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using Hazelcast.Protocol.BuiltInCodecs;
 using Hazelcast.Protocol.CustomCodecs;
@@ -99,20 +101,20 @@ namespace Hazelcast.Protocol.Codecs
     {% endfor %}
     {% for event in method.events%}
         {% for param in fixed_params(event.params) %}
-        private const int {{event.name|capital}}Event{{param.name|capital}}FieldOffset = {% if loop.first %}Messaging.FrameFields.Offset.PartitionId + BytesExtensions.SizeOfInt{% else %}{{ event.name|capital}}Event{{ loop.previtem.name|capital}}FieldOffset + BytesExtensions.SizeOf{{lang_types_decode(loop.previtem.type)|capital}}{% endif %};
+        private const int Event{{event.name|capital}}{{param.name|capital}}FieldOffset = {% if loop.first %}Messaging.FrameFields.Offset.PartitionId + BytesExtensions.SizeOfInt{% else %}Event{{ event.name|capital}}{{ loop.previtem.name|capital}}FieldOffset + BytesExtensions.SizeOf{{lang_types_decode(loop.previtem.type)|capital}}{% endif %};
         {% if loop.last %}
-        private const int {{event.name|capital}}EventInitialFrameSize = {{event.name|capital}}Event{{param.name|capital}}FieldOffset + BytesExtensions.SizeOf{{lang_types_decode(param.type)|capital}};
+        private const int Event{{event.name|capital}}InitialFrameSize = Event{{event.name|capital}}{{param.name|capital}}FieldOffset + BytesExtensions.SizeOf{{lang_types_decode(param.type)|capital}};
         {% endif %}
         {% else %}
-        private const int {{event.name|capital}}EventInitialFrameSize = Messaging.FrameFields.Offset.PartitionId + BytesExtensions.SizeOfInt;
+        private const int Event{{event.name|capital}}InitialFrameSize = Messaging.FrameFields.Offset.PartitionId + BytesExtensions.SizeOfInt;
         {% endfor %}
-        private const int {{event.name|capital}}EventMessageType = {{ event.id }}; // {{ '0x%06X'|format(event.id) }}
+        private const int Event{{event.name|capital}}MessageType = {{ event.id }}; // {{ '0x%06X'|format(event.id) }}
     {% endfor %}
 
     {#REQUEST PARAMETERS#}
         public sealed class RequestParameters
         {
-    {% for param in method.request.params %}
+        {% for param in method.request.params %}
 
             /// <summary>
             {% for line in param.doc.splitlines() %}
@@ -120,7 +122,7 @@ namespace Hazelcast.Protocol.Codecs
             {% endfor %}
             ///</summary>
             public {{ lang_types_decode(param.type) }} {{ param.name|capital }} { get; set; }
-    {% endfor %}
+        {% endfor %}
         }
     
     {#RequestENCODE#}
@@ -147,7 +149,7 @@ namespace Hazelcast.Protocol.Codecs
     {#RequestDECODE#}
         public static RequestParameters DecodeRequest(ClientMessage clientMessage)
         {
-            var iterator = clientMessage.GetEnumerator();
+            using var iterator = clientMessage.GetEnumerator();
             var request = new RequestParameters();
             {% if  fixed_params(method.request.params)|length != 0 %}
             var initialFrame = iterator.Take();
@@ -166,7 +168,7 @@ namespace Hazelcast.Protocol.Codecs
     {#RESPONSE PARAMETERS#}
         public sealed class ResponseParameters
         {
-    {% for param in method.response.params %}
+        {% for param in method.response.params %}
 
             /// <summary>
             {% for line in param.doc.splitlines() %}
@@ -174,7 +176,7 @@ namespace Hazelcast.Protocol.Codecs
             {% endfor %}
             ///</summary>
             public {{ lang_types_decode(param.type) }} {{ param.name|capital }} { get; set; }
-    {% endfor %}
+        {% endfor %}
         }
 
     {#RESPONSE ENCODE#}
@@ -196,11 +198,11 @@ namespace Hazelcast.Protocol.Codecs
     {#RESPONSE DECODE#}
         public static ResponseParameters DecodeResponse(ClientMessage clientMessage)
         {
-            var iterator = clientMessage.GetEnumerator();
+            using var iterator = clientMessage.GetEnumerator();
             var response = new ResponseParameters();
             {% if  fixed_params(method.response.params)|length != 0 %}
             var initialFrame = iterator.Take();
-            {% else %}            
+            {% else %}
             iterator.Take(); // empty initial frame
             {% endif %}
         {% for param in fixed_params(method.response.params) %}
@@ -218,11 +220,11 @@ namespace Hazelcast.Protocol.Codecs
         public static ClientMessage Encode{{(event.name|capital)}}Event({% for param in event.params %}{{ lang_types_encode(param.type) }} {{escape_keyword(param.name)}}{% if not loop.last %}, {% endif %}{% endfor %})
         {
             var clientMessage = new ClientMessage();
-            var initialFrame = new Frame(new byte[{{(event.name|capital)}}EventInitialFrameSize], (FrameFlags) ClientMessageFlags.Unfragmented);
-            initialFrame.Bytes.WriteIntL(Messaging.FrameFields.Offset.MessageType, {{(event.name|capital)}}EventMessageType);
+            var initialFrame = new Frame(new byte[Event{{(event.name|capital)}}InitialFrameSize], (FrameFlags) ClientMessageFlags.Unfragmented);
+            initialFrame.Bytes.WriteIntL(Messaging.FrameFields.Offset.MessageType, Event{{(event.name|capital)}}MessageType);
             initialFrame.Bytes.WriteIntL(Messaging.FrameFields.Offset.PartitionId, -1);
         {% for param in fixed_params(event.params) %}
-            initialFrame.Bytes.Write{{ lang_types_decode(param.type)|capital }}L({{(event.name|capital)}}Event{{param.name|capital}}FieldOffset, {{escape_keyword(param.name)}});
+            initialFrame.Bytes.Write{{ lang_types_decode(param.type)|capital }}L(Event{{(event.name|capital)}}{{param.name|capital}}FieldOffset, {{escape_keyword(param.name)}});
         {% endfor %}
             clientMessage.Append(initialFrame);
             clientMessage.Flags |= ClientMessageFlags.Event;
@@ -235,33 +237,32 @@ namespace Hazelcast.Protocol.Codecs
     {% endif %}
     
     {% if method.events|length != 0 %}
-        public static void HandleEvent(ClientMessage clientMessage{% for event in method.events%}, Handle{{ event.name|capital }}Event handle{{ event.name|capital }}Event{% endfor %}, ILoggerFactory loggerFactory)
+        public static ValueTask HandleEventAsync(ClientMessage clientMessage{% for event in method.events%}, Handle{{ event.name|capital }}EventAsync handle{{ event.name|capital }}EventAsync{% endfor %}, ILoggerFactory loggerFactory)
         {
+            using var iterator = clientMessage.GetEnumerator();
             var messageType = clientMessage.MessageType;
-            var iterator = clientMessage.GetEnumerator();
         {% for event in method.events%}
-            if (messageType == {{(event.name|capital)}}EventMessageType) {
+            if (messageType == Event{{(event.name|capital)}}MessageType) {
             {% if  fixed_params(event.params)|length != 0 %}
                 var initialFrame = iterator.Take();
-            {% else %}
-                //empty initial frame
-                iterator.Take();
+            {% else %}                
+                iterator.Take(); // empty initial frame
             {% endif %}
             {% for param in fixed_params(event.params) %}
-                var {{escape_keyword(param.name)}} =  initialFrame.Bytes.Read{{ lang_types_decode(param.type)|capital }}L({{(event.name|capital)}}Event{{param.name|capital}}FieldOffset);
+                var {{escape_keyword(param.name)}} =  initialFrame.Bytes.Read{{ lang_types_decode(param.type)|capital }}L(Event{{(event.name|capital)}}{{param.name|capital}}FieldOffset);
             {% endfor %}
             {% for param in var_size_params(event.params) %}
                 var {{escape_keyword(param.name)}} = {{ decode_var_sized(param) }};
             {% endfor %}
-                handle{{ event.name|capital }}Event({% for param in event.params %}{{escape_keyword(param.name)}}{% if not loop.last %}, {% endif %}{% endfor %});
-                return;
+                return handle{{ event.name|capital }}EventAsync({% for param in event.params %}{% if not loop.first %}, {% endif %}{{escape_keyword(param.name)}}{% endfor %});
             }
         {% endfor %}
             loggerFactory.CreateLogger(typeof(EventHandler)).LogDebug("Unknown message type received on event handler :" + messageType);
+            return default;
         }
     {% for event in method.events%}
 
-        public delegate void Handle{{ event.name|capital }}Event({% for param in event.params %}{{ lang_types_encode(param.type) }} {{escape_keyword(param.name)}}{% if not loop.last %}, {% endif %}{% endfor %});
+        public delegate ValueTask Handle{{ event.name|capital }}EventAsync({% for param in event.params %}{% if not loop.first %}, {% endif %}{{ lang_types_encode(param.type) }} {{escape_keyword(param.name)}}{% endfor %});
     {% endfor %}
     {% endif %}
     }
