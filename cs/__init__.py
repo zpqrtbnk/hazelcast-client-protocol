@@ -9,7 +9,7 @@ cs_reserved_words = {"abstract", "add", "as", "ascending", "async", "await", "ba
                      "this", "throw", "true", "try", "typeof", "uint", "ulong", "unchecked", "unsafe", "ushort",
                      "using", "value", "var", "virtual", "void", "volatile", "where", "while", "yield"}
 
-cs_ignore_service_list = {8, 19, 20, 22, 24, 25, 26, 27, 28, 32, 33}
+cs_ignore_service_list = { 8, 19, 20, 22, 24, 25, 26, 27, 28, 32, 33 }
 
 
 def cs_types_encode(key):
@@ -18,7 +18,7 @@ def cs_types_encode(key):
     except KeyError:
         cs_type = _cs_types_common[key]
     if cs_type == "NA":
-        raise NotImplementedError("Missing type Mapping")
+        raise NotImplementedError("Missing type mapping for '" + key + "'")
     return cs_type
 
 
@@ -28,7 +28,7 @@ def cs_types_decode(key):
     except KeyError:
         cs_type = _cs_types_common[key]
     if cs_type == "NA":
-        raise NotImplementedError("Missing type Mapping")
+        raise NotImplementedError("Missing type for '" + key + "'")
     return cs_type
 
 
